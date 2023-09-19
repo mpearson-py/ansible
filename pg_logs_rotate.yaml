@@ -1,0 +1,28 @@
+## Setup the logrotate script for compressing and deleting old PG log files
+
+- hosts: primary
+
+  become: true
+  become_user: root
+
+  vars:
+    retention_policy:   "45"
+    remote_log_path:    "/var/log/postgresql"
+    log_pattern:        "postgresql*log"
+    remote_dest_dir:    "/etc/logrotate.d"
+    remote_dest_file:   "postgreslogs"
+
+  tasks:
+
+  - name: "Creating the PG cleanup logs, file in /etc/logrotate.d"
+    copy:
+      dest: "{{ remote_dest_dir }}/{{ remote_dest_file }}"
+      content: |
+        {{ remote_log_path }}/{{ log_pattern }} {
+           missingok
+           notifempty
+           compress
+           delaycompress
+           maxage {{ retention_policy }}
+           endscript
+        }

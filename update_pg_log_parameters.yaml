@@ -1,0 +1,55 @@
+## Ansible script to update log parameters, although this can be used to update any parameter
+
+- hosts: pg_servers
+
+  become: true
+  become_user: postgres
+
+  vars:
+    localDir:           "/home/mpearson/ansible/"
+    remoteDir:          "/home/postgres/pg_scripts"
+    remDirOwner:        "postgres"
+    remDirGroup:        "postgres"
+
+    pgParamsDict:
+      log_autovacuum_min_duration:  '1000'
+      log_checkpoints:              'on'
+      log_error_verbosity:          'verbose'
+      log_hostname:                 'off'
+      log_connections:              'on'
+
+
+    pgParamsList:        ""
+
+    sql_stmt: "SELECT  name,
+                       setting,
+                       category,
+                       short_desc
+               FROM    pg_settings
+               WHERE   name IN ({{ pgParamStr }})
+               ORDER BY 1"
+
+  tasks:
+
+  # Check the PostgreSQL parameters BEFORE the parameter update
+
+
+  - set_fact:
+      pgParamsList: "{{ pgParamsDict.keys() | list }}"
+
+  - set_fact:
+      pgParamStr: "'{{ \"', '\".join(pgParamsList) }}'"
+
+  # - debug: msg: "{{ pgParamStr }}"
+
+  # - debug: msg: "{{ sql_stmt }}"
+
+  - name: Query PG parameter
+    community.postgresql.postgresql_query:
+      db: postgres
+      query:
+        - "{{ sql_stmt }}"
+    register: sql_results
+
+  - debug:
+      var: sql_results

@@ -1,0 +1,53 @@
+## Ansible script to update extensions
+
+- hosts: pg_servers
+
+  become: true
+  become_user: postgres
+
+  vars:
+    localDir:           "/home/mpearson/ansible/"
+    remoteDir:          "/home/postgres/pg_scripts"
+    remDirOwner:        "postgres"
+    remDirGroup:        "postgres"
+    dbName:             "postgres"
+
+    pgExtDict:
+      pg_stat_statements:  'pg_stat_statements'
+      amcheck:             'amcheck'
+      pgstattuple:         'pgstattuple'
+
+
+    sql_stmt: "SELECT  *
+               FROM    pg_available_extensions
+               WHERE   name IN ({{ pgExtStr }})
+               ORDER BY 1"
+
+  tasks:
+
+  # Check the PostgreSQL extensions BEFORE the parameter update
+
+
+  - set_fact:
+      pgExtStr: "'{{ \"', '\".join(pgExtDict) }}'"
+
+  #- debug: msg: "{{ pgExtStr }}"
+
+        #- debug: msg: "{{ sql_stmt }}"
+
+  - name: Query PG parameter
+    community.postgresql.postgresql_query:
+      db: postgres
+      query:
+        - "{{ sql_stmt }}"
+    register: sql_results
+
+  - debug:
+      var: sql_results
+
+  - name: Set PostgreSQL extensions
+    community.postgresql.postgresql_ext:
+      name:   "{{ item.keys }}"
+      db:     "{{ dbName }}"
+    register: set
+    with_dict: "{{ pgExtDict }}"

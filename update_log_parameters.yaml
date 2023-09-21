@@ -2,181 +2,92 @@
 
 ## Ansible script to update log parameters, although this can be used to update any parameter
 
- 
-
-- hosts: arm_pg_log_servers
-
- 
+ - hosts: arm_pg_log_servers 
 
   become: true
-
   become_user: postgres
 
- 
-
   vars:
-
     #localDir:           "/home/mpearson/ansible/"
-
     remoteDir:          "/home/postgres/pg_scripts"
-
     remDirOwner:        "postgres"
-
     remDirGroup:        "postgres"
-
  
 
     pgParamsDict:
-
        log_autovacuum_min_duration : '0'
-
        log_checkpoints             : 'on'
-
        log_connections             : 'on'
-
        log_destination             : 'stderr'
-
        ##log_directory               : '/var/log/postgresql'
-
        log_disconnections          : 'on'
-
        log_duration                : 'off'
-
        log_error_verbosity         : 'verbose'
-
        log_filename                : 'postgresql_%Y-%m-%d.log'
-
        logging_collector           : 'on'
-
        log_hostname                : 'on'
-
        log_line_prefix             : '%m [%p]: u=[%u] db=[%d] app=[%a] c=[%h] s=[%c:%l] tx=[%v:%x]'
-
        log_lock_waits              : 'on'
-
        log_min_duration_statement  : '100'
-
        log_rotation_age            : '1440'
-
        log_rotation_size           : '102400'
-
        log_statement               : 'ddl'
-
        log_statement_stats         : 'off'
-
        log_temp_files              : '0'
-
        log_truncate_on_rotation    : 'on'
-
  
-
     pgParamsList:        ""
 
- 
-
     sql_stmt: "SELECT  name,
-
                        setting,
-
                        category,
-
                        short_desc
-
                FROM    pg_settings
-
                WHERE   name IN ({{ pgParamStr }})
-
                ORDER BY 1"
-
- 
 
   tasks:
 
- 
-
   # Check the PostgreSQL parameters BEFORE the parameter update
-
- 
-
   ## Get the dictionary keys and filter them into a list called: pgParamsList
 
   - set_fact:
-
       pgParamsList: "{{ pgParamsDict.keys() | list }}"
 
- 
-
-  ## Convert the "pgParamsList" list into a string with quotes around each key.
+   ## Convert the "pgParamsList" list into a string with quotes around each key.
 
   - set_fact:
-
       pgParamStr: "'{{ \"', '\".join(pgParamsList) }}'"
 
- 
-
   # - debug: msg: "{{ pgParamStr }}"
-
- 
-
   # - debug: msg: "{{ sql_stmt }}"
 
- 
-
   - name: "Query PG parameter values BEFORE the parameter update"
-
     community.postgresql.postgresql_query:
-
       db: postgres
-
-      query:
-
+        query:
         - "{{ sql_stmt }}"
-
     register: sql_results
-
  
-
   - debug:
-
-      var: sql_results
-
- 
+      var: sql_results 
 
   - name: "Set PostgreSQL parameters via dictionary"
-
     community.postgresql.postgresql_set:
-
       name:   "{{ item.key }}"
-
       value:  "{{ item.value }}"
-
     register: set
-
-    with_dict: "{{ pgParamsDict }}"
-
- 
+    with_dict: "{{ pgParamsDict }}" 
 
   # Check the PostgreSQL parameters AFTER the parameter update
 
- 
-
-  - name: "Query PG parameter values AFTER the parameter update"
-
+   - name: "Query PG parameter values AFTER the parameter update"
+   
     community.postgresql.postgresql_query:
-
       db: postgres
-
       query:
-
         - "{{ sql_stmt }}"
-
     register: sql_results
-
  
-
   - debug:
-
       var: sql_results
-
- 
-IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium. Thank you.

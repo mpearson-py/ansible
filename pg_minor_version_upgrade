@@ -1,0 +1,29 @@
+- hosts: primary
+
+  become: true
+  become_user: root
+
+  vars:
+    pg_major_version:   "15"
+    pg_minor_version:   "15.4"
+
+  tasks:
+
+  - name:   "Stop the PostrgeSQL minor version"
+    systemd:
+      state: stopped
+      name:  postgresql-{{ pg_major_version }}
+
+  - name:   "Update the PostrgeSQL minor version"
+    yum:
+      name: "{{ item }}"
+      state: latest
+    with_items:
+      - postgresql{{ pg_major_version }}-server-{{ pg_minor_version }}
+      - postgresql{{ pg_major_version }}-contrib-{{ pg_minor_version }}
+
+  - name:   "Start the PostrgeSQL minor version"
+    systemd:
+      state: started
+      name:  postgresql-{{ pg_major_version }}
+
